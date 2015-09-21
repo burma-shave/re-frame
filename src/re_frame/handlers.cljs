@@ -36,19 +36,17 @@
     :else         (warn "re-frame: comp-middleware expects a vector, got: " v)))
 
 
-;; -- the register of event handlers --------------------------------------------------------------
 
-(def ^:private id->fn  (atom {}))
 
 
 (defn lookup-handler
-  [event-id]
+  [id->fn event-id]
   (get @id->fn event-id))
 
 
 (defn clear-handlers!
   "Unregister all event handlers"
-  []
+  [id->fn]
   (reset! id->fn {}))
 
 
@@ -56,15 +54,15 @@
   "register a handler for an event.
   This is low level and it is expected that \"re-frame.core/register-handler\" would
   generally be used."
-  ([event-id handler-fn]
+  ([id->fn event-id handler-fn]
     (when (contains? @id->fn event-id)
       (warn "re-frame: overwriting an event-handler for: " event-id))   ;; allow it, but warn.
     (swap! id->fn assoc event-id handler-fn))
 
-  ([event-id middleware handler-fn]
+  ([id->fn event-id middleware handler-fn]
     (let  [mid-ware    (comp-middleware middleware)   ;; compose the middleware
            midware+hfn (mid-ware handler-fn)]         ;; wrap the handler in the middleware
-      (register-base event-id midware+hfn))))
+      (register-base id->fn event-id midware+hfn))))
 
 
 
@@ -82,9 +80,9 @@
     - the event vector
   The handler is assumed to side-effect on `app-db` - the return value is ignored.
   To write a pure handler, use the \"pure\" middleware when registering the handler."
-  [event-v]
+  [id->fn app-db event-v]
   (let [event-id    (first-in-vector event-v)
-        handler-fn  (lookup-handler event-id)]
+        handler-fn  (lookup-handler id->fn event-id)]
     (if (nil? handler-fn)
       (error "re-frame: no event handler registered for: \"" event-id "\". Ignoring.")
       (if  *handling*

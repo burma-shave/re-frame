@@ -1,28 +1,40 @@
 (ns re-frame.core
   (:require
-    [re-frame.handlers   :as handlers]
-    [re-frame.subs       :as subs]
-    [re-frame.router     :as router]
-    [re-frame.utils      :as utils]
-    [re-frame.middleware :as middleware]))
+    [re-frame.handlers :as handlers]
+    [re-frame.subs :as subs]
+    [re-frame.router :as router]
+    [re-frame.utils :as utils]
+    [re-frame.middleware :as middleware]
+    [reagent.core :as reagent]))
 
+(def app-db (reagent/atom {}))
+
+(def event-chan (chan))
+
+;; maps from handler-id to handler-fn
+(def ^:private key->fn (atom {}))
+
+;; -- the register of event handlers --------------------------------------------------------------
+(def ^:private id->fn  (atom {}))
+
+(router/router-loop id->fn app-db event-chan)
 
 ;; --  API  -------
-
-(def dispatch         router/dispatch)
+(defn dispatch [event-v]
+  (router/dispatch event-chan event-v))
 (def dispatch-sync    router/dispatch-sync)
 
-(def register-sub        subs/register)
-(def clear-sub-handlers! subs/clear-handlers!)
-(def subscribe           subs/subscribe)
+(def register-sub (partial subs/register key->fn))
+(def clear-sub-handlers! (partial subs/clear-handlers! key-fn))
+(def subscribe (partial subs/subscribe key->fn))
 
 
-(def clear-event-handlers!  handlers/clear-handlers!)
+(def clear-event-handlers! (partial handlers/clear-handlers! id->fn))
 
 
 (def pure        middleware/pure)
 (def debug       middleware/debug)
-(def undoable    middleware/undoable)
+;(def undoable    middleware/undoable)
 (def path        middleware/path)
 (def enrich      middleware/enrich)
 (def trim-v      middleware/trim-v)
@@ -48,9 +60,9 @@
 ;; register with "pure" middleware in the correct (left-hand-side) position.
 (defn register-handler
   ([id handler]
-    (handlers/register-base id pure handler))
+    (handlers/register-base id->fn id pure handler))
   ([id middleware handler]
-    (handlers/register-base id [pure middleware] handler)))
+    (handlers/register-base id->fn id [pure middleware] handler)))
 
 
 

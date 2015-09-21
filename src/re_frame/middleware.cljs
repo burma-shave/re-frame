@@ -1,7 +1,7 @@
 (ns re-frame.middleware
   (:require
     [reagent.ratom  :refer [IReactiveAtom]]
-    [re-frame.undo  :refer [store-now!]]
+    ;[re-frame.undo  :refer [store-now!]]
     [re-frame.utils :refer [warn log group groupEnd error]]
     [clojure.data   :as data]))
 
@@ -123,27 +123,27 @@
           [db v]
           (assoc-in db path (handler (get-in db path) v)))))))
 
-
-(def undoable
-  "A Middleware factory which stores an undo checkpoint.
-  \"explanation\" can be either a string or a function. If it is a
-  function then must be:  (db event-vec) -> string.
-  \"explanation\" can be nil. in which case \"\" is recorded.
-  "
-  ^{:re-frame-factory-name "undoable"}
-  (fn undoable
-    [explanation]
-    (fn undoable-middleware
-      [handler]
-      (fn undoable-handler
-        [db event-vec]
-        (let [explanation (cond
-                            (fn? explanation)     (explanation db event-vec)
-                            (string? explanation) explanation
-                            (nil? explanation)    ""
-                            :else (error "re-frame: \"undoable\" middleware given a bad parameter. Got: " explanation))]
-          (store-now! explanation)
-          (handler db event-vec))))))
+;
+;(def undoable
+;  "A Middleware factory which stores an undo checkpoint.
+;  \"explanation\" can be either a string or a function. If it is a
+;  function then must be:  (db event-vec) -> string.
+;  \"explanation\" can be nil. in which case \"\" is recorded.
+;  "
+;  ^{:re-frame-factory-name "undoable"}
+;  (fn undoable
+;    [explanation]
+;    (fn undoable-middleware
+;      [handler]
+;      (fn undoable-handler
+;        [db event-vec]
+;        (let [explanation (cond
+;                            (fn? explanation)     (explanation db event-vec)
+;                            (string? explanation) explanation
+;                            (nil? explanation)    ""
+;                            :else (error "re-frame: \"undoable\" middleware given a bad parameter. Got: " explanation))]
+;          (store-now! explanation)
+;          (handler db event-vec))))))
 
 
 (def enrich
